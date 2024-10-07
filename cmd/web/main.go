@@ -1,12 +1,16 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"path/filepath"
 )
 
 func main() {
+	addr := flag.String("addr", ":4000", "HTTP netork address")
+	flag.Parse()
+
 	mux := http.NewServeMux()
 
 	fileserver := http.FileServer(neuteredFileSystem{http.Dir("./ui/static/")})
@@ -17,8 +21,8 @@ func main() {
 	mux.HandleFunc("/snippet/view", snippetView)
 	mux.HandleFunc("/snippet/create", snippetCreate)
 
-	log.Print("Starting server on :4000")
-	err := http.ListenAndServe(":4000", mux)
+	log.Printf("Starting server on %s", *addr)
+	err := http.ListenAndServe(*addr, mux)
 	log.Fatal(err)
 }
 
@@ -34,7 +38,7 @@ func (nfs neuteredFileSystem) Open(path string) (http.File, error) {
 	}
 
 	s, err := f.Stat()
-	if s.IsDir() {
+	if err != nil && s.IsDir() {
 		index := filepath.Join(path, "index.html")
 		if _, err := nfs.fs.Open(index); err != nil {
 			closeErr := f.Close()
